@@ -1,0 +1,73 @@
+---
+title: "Challenge 4"
+author: "Natalie Simbolon"
+date: "11/28/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Loading Packages, message = FALSE}
+library(tidyverse)
+library(tidytuesdayR)
+```
+
+```{r Importing Data}
+tuesdata <- tidytuesdayR::tt_load(2021, week = 8, auth = "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")
+
+freed <- tuesdata$freed_slaves
+
+labeling <- tuesdata$freed_slaves
+```
+
+```{r Wrangling}
+labeling[labeling==100]=NA
+label <- labeling %>% 
+  summarise(
+    Free = str_c(Free, "%", sep = "")
+  )
+```
+
+
+```{r Figure, fig.height=28, fig.width=22}
+freed %>% 
+  ggplot(aes(x = freed$Year, y = freed$Slave, label = label$Free)) +
+  geom_area(fill = "black") +
+  geom_text(data = label, aes(label = Free), vjust = -1, size = 10) +
+  annotate(geom = "text", label = "100%", x = 1868.5, y = 90, size = 10) +
+  annotate(geom = "text", label = "SLAVE\nESCLAVES", x = 1830, y = 50, size = 30, color = "antiquewhite2", face = "bold") +
+  annotate(geom = "text", label = "FREE - LIBRE", x = 1830, y = 97, size = 18, color = "black", face = "bold") +
+  scale_y_continuous(
+    expand = c(0,0), 
+    limits = c(NA, 101)
+  ) +
+  scale_x_continuous(
+    expand = c(0,0),
+    limits = c(1790, 1870),
+    breaks = seq(1790, 1870, 10), 
+    position = "top"
+  ) +
+  labs(
+    title = "\nPROPORTION OF FREEMEN AND SLAVES AMONG AMERCIAN NEGROES.\n\n\nPROPORTION DES NÈGRES LIBRES ET DES ESCLAVES EN AMÉRIQUE.\n",
+    subtitle = "DONE BY ATLANTA UNIVERSITY.\n\n",
+    y = ""
+  ) +
+  theme_minimal() +
+  theme(
+    panel.background = element_rect("#00aa00"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.text.x = element_text(size = 24, face = "bold", color = "black"),
+    axis.title.x = element_blank(),
+    plot.title = element_text(face = "bold", size = 35, hjust = 0.5),
+    plot.subtitle = element_text(face = "bold", size = 20, hjust = 0.5),
+    plot.background = element_rect(margin(r = 10, unit = "in"),fill = "antiquewhite2")
+  ) +
+  coord_cartesian(clip = "off")
+
+ggsave("challenge4.png")
+```
+

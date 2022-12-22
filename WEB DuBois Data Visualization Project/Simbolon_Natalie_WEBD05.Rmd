@@ -1,0 +1,164 @@
+---
+title: "Challenge 5"
+author: "Natalie Simbolon"
+date: "12/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Loading Packages, message = FALSE}
+library(tidyverse)
+library(tidytuesdayR)
+library(gridExtra)
+library(janitor)
+library(gtable)
+library(grid)
+library(png)
+```
+
+```{r Importing Data}
+tuesdata <- tidytuesdayR::tt_load(2021, week = 8, auth = "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")
+
+income <- tuesdata$income %>% 
+  clean_names()
+```
+```{r Wrangling}
+combined <- income %>% 
+  pivot_longer(cols = c(rent, food, clothes, tax, other), names_to = "expenditure", values_to = "percentage") %>% 
+  group_by(class)
+
+combined$expenditure = factor(combined$expenditure, levels = c("other", "tax", "clothes", "food", "rent"))
+combined$class = factor(combined$class, levels = c("Over $1000", "$750-1000", "$500-750", "$400-500", "$300-400", "$200-300", "$100-200"))
+
+
+combined[combined==0]=NA
+```
+
+
+```{r Base Figure}
+baseplot <- combined %>% 
+  ggplot(aes(x = "class", fill = expenditure)) +
+  geom_bar(width = 0.03, show.legend = FALSE) +
+  scale_fill_manual(
+    values = c("#c9b8a6", "#b2a6a0", "#be8b7a", "#765d80", "#191618")
+  ) +
+  theme_void() +
+  theme(
+    axis.title = element_blank(),
+    axis.text = element_blank()
+  ) +
+  coord_flip() 
+
+ggsave("baseplot.png")
+
+
+img <- readPNG("baseplot.png", native = TRUE)
+b <- rasterGrob(img, interpolate=TRUE)
+
+```
+
+```{r Table, fig.height=5}
+mytable <- cbind(combined[,1:2])
+
+mytable <- mytable %>% 
+  group_by(class, actual_average) %>% 
+  distinct(keep_all = FALSE) %>% 
+  select(-keep_all) %>% 
+  mutate(
+    actual_average = paste0("$",actual_average),
+    class = as.character(class)
+  ) %>% 
+  rename(
+    'ACTUAL AVG.' = actual_average,
+    CLASS = class
+  )
+
+ mytable$CLASS[mytable$CLASS=="Over $1000"] <- "1,000 AND OVER"
+
+ adjustTheme <- ttheme_default(padding = unit(c(0,1.2), "cm"),
+                              base_size = 10,
+                              core = list(fg_params = list(col = "black", hjust = 0.5),
+                                          bg_params=list(fill = "antiquewhite2")),
+                              colhead = list(fg_params = list(col = "black"),
+                                             bg_params = list(fill = "antiquewhite2")
+                                            ))
+ 
+g <- tableGrob(mytable,theme = adjustTheme, rows = NULL)
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = 2, l = 1, r = ncol(g))
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = 3, l = 1, r = ncol(g))
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = 4, l = 1, r = ncol(g))
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = 5, l = 1, r = ncol(g))
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = 6, l = 1, r = ncol(g))
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = 7, l = 1, r = ncol(g))
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = 8, l = 1, r = ncol(g))
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 2, b = 8, l = 1, r = 1)
+
+g <- gtable_add_grob(g,
+        grobs = rectGrob(gp = gpar(fill = NA, lwd = 2)),
+        t = 1, l = 1, r = 2)
+
+ggplot()+
+  theme_minimal() + 
+ annotation_custom(g)
+```
+
+```{r Figure, fig.height=6, fig.width=10}
+combined %>% 
+  mutate(
+    percents = paste0(percentage,"%")) %>% 
+  ggplot(aes(x = class, y = percentage, fill = expenditure)) +
+  geom_col(width = 0.45, show.legend = FALSE) +
+  geom_text(aes(label = percents, color = expenditure), position = position_stack(vjust = 0.5), size = rel(3), show.legend = FALSE) +
+  annotate(geom = "text", label = "POOR.", y = 105, x = 6.5, size = 2.5, angle = 90) +
+  annotate(geom = "text", label = "FAIR.", y = 105, x = 4.5, size = 2.5, angle = 90) +
+  annotate(geom = "text", label = "COMFORTABLE.", y = 105, x = 2.5, size = 2.5, angle = 90) +
+  annotate(geom = "text", label = "WELL-TO-DO.", y = 105, x = 1.2, size = 2, angle = 90) +
+  scale_y_discrete(
+    expand = c(0.3,0)
+  ) +
+  scale_x_discrete(
+    expand = c(0,0)
+  ) +
+  scale_fill_manual(
+    values = c("#c9b8a6", "#b2a6a0", "#be8b7a", "#765d80", "#191618")
+  ) +
+  scale_color_manual(
+    values = c("black", "black", "black", "black", "antiquewhite2")
+  ) +
+  labs(
+    title = "\nINCOME AND EXPENDITURE OF 150 NEGRO FAMILIES IN ATLANTA, GA.,U.S.A.\n\n\n\n\n",
+    caption = "\nFOR FURTHER STATISTICS RAISE THIS FRAME."
+  ) +
+  annotation_custom(g, xmin = 0, xmax = 9, ymin = -28, ymax = 0) +
+  theme_void() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+    plot.caption = element_text(hjust = 0.5),
+    plot.background = element_rect(fill = "antiquewhite2")
+  ) +
+  coord_flip()
+
+ggsave("challenge5.png")
+```
+
+
+

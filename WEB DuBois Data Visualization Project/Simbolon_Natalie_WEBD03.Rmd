@@ -1,0 +1,52 @@
+---
+title: "Challenge 3"
+author: "Natalie Simbolon"
+date: "11/27/2021"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Loading Packages, message = FALSE}
+library(tidyverse)
+library(tidytuesdayR)
+```
+
+```{r Importing Data, message = FALSE}
+tuesdata <- tidytuesdayR::tt_load(2021, week = 8, auth = "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")
+
+occupation <- tuesdata$occupation
+
+occupation
+```
+
+```{r Wrangling}
+occupation <- occupation %>% 
+  mutate(
+    Percent = paste0(Percentage, "%"),
+    Value = 1
+  ) %>% 
+  pivot_wider(id_cols = c(Occupation, Percentage, Percent), names_from = Group, values_from = Value)
+
+
+n <- occupation %>% 
+  select(-Whites) %>% 
+  filter(!is.na(Negroes))
+
+w <- occupation %>% 
+  select(-Negroes) %>% 
+  filter(!is.na(Whites))
+
+w
+```
+
+```{r Figure}
+n %>% 
+  ggplot(aes(x = Occupation, y = Percentage, fill = Occupation)) +
+  geom_col( na.rm = TRUE) +
+  ylim(0,64) + 
+  coord_polar(start = -pi/2) +
+  theme_void()
+```
+

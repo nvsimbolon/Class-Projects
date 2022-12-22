@@ -1,0 +1,83 @@
+---
+title: "Challenge 1"
+author: "Natalie Simbolon"
+date: "11/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Loading Packages, message = FALSE}
+library(tidyverse)
+library(tidytuesdayR)
+```
+
+```{r Importing Data, message = FALSE}
+# Get the Data
+tuesdata <- tidytuesdayR::tt_load(2021, week = 8, auth = "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")
+
+georgia_pop <- tuesdata$georgia_pop
+```
+
+```{r Wrangling}
+tidy <- georgia_pop %>% 
+    rename("COLORED =" = "Colored",
+           "WHITE =" = "White") %>% 
+    gather(key = Race, value = Percent, c("COLORED =", "WHITE ="))
+```
+
+
+```{r Figure, fig.height=28, fig.width=22}
+tidy %>% 
+  ggplot(aes(x=Year, y = Percent, group = Race)) +
+  geom_line(size = 1, color = "gray12", show.legend = TRUE, aes(lty = Race)) +
+  labs(
+    x = NULL,
+    y = "PERCENTS\n\n",
+    title = "\nCOMPARATIVE INCREASE OF WHITE AND COLORED\nPOPULATION OF GEORGIA.\n"
+  ) +
+  scale_x_continuous(
+    expand = c(0,0),
+    breaks = seq(1790,1890,10)
+  ) +
+  scale_y_reverse(
+    expand = c(0,0),
+    breaks = seq(0,100,5)
+  ) +
+  scale_linetype_manual(
+    values = c(1,5)
+  ) +
+  guides(
+    lty = guide_legend(label.position = "left",
+                       label.hjust = 1)
+  ) +
+  theme_bw() +
+  theme(
+    panel.grid.minor.y = element_blank(),
+    panel.grid = element_line(color = "#dc143c"),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(color = "black"),
+    axis.text.y = element_text(size = 22, color = "gray12", family = "sans", margin = margin(c(0, 25, 0, 0), unit = "pt")),
+    axis.text.x = element_text(size = 15, color = "gray12", family = "sans"),
+    axis.title.x = element_text(vjust = -3, size = 18, color = "gray12", family = "sans"),
+    plot.title = element_text(face = "bold", size = 40, hjust = 0.5, family = "sans"),
+    plot.title.position = "plot",
+    legend.position = c(0.1,-0.039),
+    legend.direction = "horizontal",
+    legend.text = element_text(margin = margin(c(0, 0, 0, 16), unit = "in"), size = 12),
+    legend.spacing.x = unit(0, "in"),
+    legend.title = element_blank(),
+    legend.key.width = unit(6, "lines"),
+    axis.ticks = element_blank(),
+    plot.background = element_rect(fill = "antiquewhite2"),
+    panel.background = element_rect(fill = "antiquewhite2"),
+    legend.background = element_rect(fill = "antiquewhite2"),
+    legend.key = element_rect(fill = "antiquewhite2")
+  ) +
+  coord_flip()
+
+ggsave("challenge1.png")
+  
+```

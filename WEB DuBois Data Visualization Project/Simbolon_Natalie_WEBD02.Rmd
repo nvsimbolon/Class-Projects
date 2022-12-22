@@ -1,0 +1,84 @@
+---
+title: "Challenge 2"
+author: "Natalie Simbolon"
+date: "11/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Loading Packages, message = FALSE}
+library(tidyverse)
+library(tidytuesdayR)
+library(ggpubr)
+```
+
+```{r Importing Data, message = FALSE}
+# Get the Data
+tuesdata <- tidytuesdayR::tt_load(2021, week = 8, auth = "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")
+
+conjugal <- tuesdata$conjugal
+```
+
+```{r Wrangling}
+gathered <- conjugal %>% 
+  rename("SINGLE" = "Single", "MARRIED" = "Married", "WIDOWED AND DIVORCED" = "Divorced and Widowed") %>% 
+  gather(key = Status, value = Percent, c("SINGLE", "MARRIED", "WIDOWED AND DIVORCED"))
+
+#Factoring and renaming values
+gathered$Population[gathered$Population == "Germany"] <- "GERMANY"
+gathered$Population[gathered$Population == "Negroes"] <- "NEGROES"
+gathered$Population_f = factor(gathered$Population, levels = c("NEGROES", "GERMANY"))
+gathered$Status_f = factor(gathered$Status, levels = c("SINGLE", "MARRIED", "WIDOWED AND DIVORCED"))
+
+gathered <- gathered %>% 
+  mutate(
+    pct_label = paste0(Percent, "%")
+  )
+```
+
+```{r Figure, fig.height=28, fig.width=22}
+gathered %>% 
+  ggplot(aes(y = Population_f, x = Percent, fill = Status_f, group = Status_f)) +
+  geom_col(orientation = "y", position = position_stack(), width = 0.35, size = 0.1) +
+  labs(
+    title = "\nCONJUGAL CONDITION.\n\n\n",
+    y = "",
+    x = ""
+  ) +
+  geom_text(aes(label = pct_label), position = position_stack(vjust = 0.5), size = 8) +
+  scale_radius(range = c(3,6)) +
+  facet_wrap(~Population_f, nrow = 3, ncol = 1) +
+  facet_wrap(~Age, nrow = 3, ncol = 1, strip.position = "left") +
+  scale_x_reverse() +
+  scale_fill_manual(
+    values = c("#c4374f", "#ebb737", "#5a7563")
+  ) +
+  guides(fill = guide_legend(ncol = 2)) +
+  theme_void() +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 40),
+    plot.title.position = "plot",
+    legend.key.size = unit(2, "cm"),
+    legend.text = element_text(size = 20),
+    legend.position = c(0.45,1.01),
+    legend.box.margin = margin(r = 2, unit = "cm"),
+    legend.direction = "horizontal",
+    legend.title = element_blank(),
+    axis.text.y = element_text(hjust = 0, size = 20),
+    axis.title = element_text(size = 20),
+    strip.placement = "outside",
+    strip.text.y.left = element_text(angle = 0, size  = 20),
+    panel.border = element_blank(),
+    plot.margin = margin(0.5, 2.25, 3, 2.25, "cm"),
+    panel.spacing.y = unit(3, "lines"),
+    axis.text.x = element_blank(),
+    plot.background = element_rect(fill = "antiquewhite2")
+  )
+
+ggsave("challenge2.png")
+```
+
+

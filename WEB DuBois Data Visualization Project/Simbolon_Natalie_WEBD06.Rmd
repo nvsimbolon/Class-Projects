@@ -1,0 +1,91 @@
+---
+title: "Challenge 6"
+author: "Natalie Simbolon"
+date: "12/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Loading Packages, message = FALSE}
+library(tidyverse)
+library(tidytuesdayR)
+```
+
+```{r Importing Data, message = FALSE}
+tuesdata <- tidytuesdayR::tt_load(2021, week = 8, auth = "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")
+
+city_rural <- tuesdata$city_rural
+
+city_rural
+```
+```{r Spiral and Lines}
+
+pop_lineend <- 9e4
+
+lines <- city_rural %>% 
+  mutate(Population = if_else(Category == last(Category), pop_lineend, Population),
+         colour = c("#406C5C", "#5472A8", "#F2B100", "#D4273F"),
+         angle = c(0, 135, 45, 135)) %>% 
+  `[<-`(c("x", "xend", "y", "yend"), value = NA_real_)
+
+# This is clunky
+for (i in seq_len(nrow(lines))) {
+  lines <- lines %>% 
+    mutate(x = if_else(row_number() == i, lag(xend, default = 0), x),
+           xend = if_else(row_number() == i,
+                          x + Population * cos(2 * pi * angle / 360),
+                          xend),
+           y = if_else(row_number() == i, lag(yend, default = 0), y),
+           yend = if_else(row_number() == i,
+                          y + Population * sin(2 * pi * angle / 360),
+                          yend))
+}
+
+spiral <- tibble(a = 1e4,
+                      b = 857.26, # Trial and error - to get correct spiral length
+                      theta = seq(0, 9 * pi, length = 1e4) -
+                        2 * pi * -45 / 360, # Rotate 45° CCW
+                      r = a + b * theta,
+                      x = r * cos(theta),
+                      y = r * sin(theta)) %>%
+  # Spiral starts at end of last line:
+  mutate(x = x + last(lines_data$xend) - last(x),
+         y = y + last(lines_data$yend) - last(y))
+```
+
+```{r Figure, fig.height=28, fig.width=22}
+lines %>% 
+  ggplot(aes(x, y)) +
+  geom_segment(aes(xend = xend, yend = yend),
+               lineend = "round", size = 2.1, show.legend = FALSE) +
+  geom_path(data = spiral,
+            size = 2.1, lineend = "round") +
+  geom_segment(aes(xend = xend, yend = yend, colour = colour),
+               lineend = "round", size = 2, show.legend = FALSE) +
+  geom_path(data = spiral,
+            colour = last(lines$colour), size = 2, lineend = "round") +
+  scale_x_continuous(limits = c(-5e4, 17e4)) +
+  scale_y_reverse(limits = c(23e4, -6e4)) +
+  scale_colour_identity() +
+  coord_equal() +
+  labs(
+    title = "CITY AND RURAL POPULATION.\n1890."
+  ) +
+  annotate("text", x = 22e3, y = 4e3,
+           label = "78,139 NEGROES IN CITIES\nOF OVER 10,000 INHABITANTS", size = 8, lineheight = .75,
+           colour = "grey20") +
+  annotate("text", x = lines$x[2], y = 4e3, label = "8,025 NEGROES IN CITIES\n FROM 5,000 TO 10,000", size = 8, lineheight = .75, hjust = "left", colour = "grey20") +
+  annotate("text", x = lines$x[3], y = mean(lines$y[3:4]),label = "37,699\nNEGROES\nIN CITIES\n FROM\n2,500 TO 5,000", size = 8, lineheight = .75, colour = "grey20") +
+  annotate("text", x = spiral$x[1] - 7e3, y = spiral$y[1] - 8e3, label = "734,952", size = 8, colour = "grey20") +
+  annotate("text", x = mean(c(-5e4, 17e4)), y = max(spiral$y) + 4e3, label = "NEGROES LIVING IN THE COUNTRY AND VILLAGES", size = 8, colour = "grey20") +
+  theme_void() +
+  theme(
+    plot.background = element_rect(margin(r = 10, unit = "in"),fill = "antiquewhite2"),
+    plot.title = element_text(face = "bold", size = 45, hjust = 0.5, vjust = -5))
+
+ggsave("challenge6.png", units = "in", width = 22, height = 28)
+```
+
